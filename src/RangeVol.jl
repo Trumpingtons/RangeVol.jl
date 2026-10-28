@@ -6,7 +6,8 @@ close-to-close baseline, Parkinson (1980), Garman-Klass (1980),
 Rogers-Satchell (1991), the Garman-Klass-Yang-Zhang overnight extension,
 and the full Yang-Zhang (2000) minimum-variance estimator.
 
-All estimators accept vectors of daily prices and return annualised volatility.
+All estimators accept vectors of daily prices and return daily volatility;
+pass `trading_periods` (252 for equities) to annualise.
 """
 module RangeVol
 

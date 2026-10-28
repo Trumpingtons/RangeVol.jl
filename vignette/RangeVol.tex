@@ -133,8 +133,8 @@ currency prices set the close equal to the open; check before trusting a range-b
 \fn{volatility()} of each with \fn{N = 252}, over the whole series (\fn{n = nrow} for the first four, \fn{n = nrow - 1}
 for the two with an overnight term, whose window counts pairs of days). The estimates RangeVol computes today differ
 from TTR's by at most $2.0\times10^{-14}$, relative, in each of the 18; running TTR again in R gives the saved values to
-about 15 digits. The test suite compares two saved CSVs, TTR's and one RangeVol wrote, at a relative tolerance of
-$10^{-4}$, and does not recompute.
+about 15 digits. The test suite computes RangeVol's estimates from the saved prices and compares them with TTR's at a
+relative tolerance of $10^{-10}$.
 
 \nmsub{By simulation}
 \fn{vignette/simulation.jl} draws prices whose log moves as a random walk, with a daily standard deviation of 0.0126,
@@ -159,16 +159,12 @@ and the range-based estimators then understate the variance by 6 to 9 per cent; 
 a move overnight, the first three miss it, as in AAPL, and only the last two stay close to the truth.
 
 \nmsub{The rest}
-\fn{test/runtests.jl}: 15 tests that each estimator is positive and near the volatility of a simulated series, and the
-log range the logarithm of the range, and 5
-that wrong arguments (vectors of different lengths, too few days) throw. The simulated highs and lows in these tests
-are drawn around the open and close, not from a path, and the tolerance of 0.005 is wide against a daily volatility of
-0.0126; \fn{vignette/simulation.jl} is the stronger check.
+\fn{test/runtests.jl}: 15 tests that each estimator is positive and within 10 per cent of the volatility of 500
+simulated days, each drawn in 390 steps with its high and low taken from the path, and that the log range is the
+logarithm of the range; and 5 that wrong arguments (vectors of different lengths, too few days) throw.
 
 \nmsection{Still open}
 \begin{itemize}
-  \item \textbf{Recompute in the tests.} The comparison with TTR should compute RangeVol's estimates in the test, from
-    the data, rather than read them from a CSV written earlier.
   \item \textbf{Rolling windows.} TTR's \fn{volatility()} returns an estimate for each window of $n$ days; RangeVol
     returns one for the whole series.
   \item \textbf{Bias corrections.} The discrete-sampling bias above has known corrections, and Yang and Zhang's

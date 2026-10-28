@@ -6,32 +6,29 @@ using .RangeVol
 data_dir = joinpath(@__DIR__, "data")
 
 # ── Cross-validation against TTR (R) ─────────────────────────────────────────
-# Requires generate_data.R and generate_results.jl to have been run first.
+# Requires generate_data.R to have been run first: it writes the OHLC series
+# and TTR's estimates of them, which are recomputed here with RangeVol.
 @testset "TTR cross-validation" begin
     ttr_file = joinpath(data_dir, "ttr_results.csv")
-    rv_file  = joinpath(data_dir, "rangevol_results.csv")
 
-    if !isfile(ttr_file) || !isfile(rv_file)
-        @warn "Cross-validation CSVs not found — run generate_data.R then generate_results.jl first"
+    if !isfile(ttr_file)
+        @warn "ttr_results.csv not found — run generate_data.R first"
     else
-        ttr = CSV.File(ttr_file)
-        rv  = CSV.File(rv_file)
-
         estimators = [
-            :close_to_close,
-            :parkinson,
-            :garman_klass,
-            :rogers_satchell,
-            :garman_klass_yang_zhang,
-            :yang_zhang,
+            :close_to_close          => (o, h, l, c) -> close_to_close(c; trading_periods = 252),
+            :parkinson               => (o, h, l, c) -> parkinson(h, l; trading_periods = 252),
+            :garman_klass            => (o, h, l, c) -> garman_klass(o, h, l, c; trading_periods = 252),
+            :rogers_satchell         => (o, h, l, c) -> rogers_satchell(o, h, l, c; trading_periods = 252),
+            :garman_klass_yang_zhang => (o, h, l, c) -> garman_klass_yang_zhang(o, h, l, c; trading_periods = 252),
+            :yang_zhang              => (o, h, l, c) -> yang_zhang(o, h, l, c; trading_periods = 252),
         ]
 
-        for (t, r) in zip(ttr, rv)
+        for t in CSV.File(ttr_file)
             @testset "$(t.dataset)" begin
-                for est in estimators
-                    tv = getproperty(t, est)
-                    rv_val = getproperty(r, est)
-                    @test isapprox(tv, rv_val; rtol = 1e-4) broken = (tv === missing || rv_val === missing)
+                tbl = CSV.File(joinpath(data_dir, "$(t.dataset).csv"))
+                o, h, l, c = (Float64[getproperty(r, k) for r in tbl] for k in (:open, :high, :low, :close))
+                for (est, f) in estimators
+                    @test isapprox(f(o, h, l, c), getproperty(t, est); rtol = 1e-10)
                 end
             end
         end
@@ -45,54 +42,53 @@ end
     dt  = 1 / 252
     sigma = 0.20
 
-    # GBM: one price path, open = previous close (no overnight gap)
-    log_ret = sigma * sqrt(dt) .* randn(rng, n)
-    price   = 100.0 .* cumprod(exp.(log_ret))
-
-    cl = price
-    op = vcat([100.0], price[1:end-1])
-
-    # Intraday high/low: Brownian bridge range ~ |N(0,1)| * sigma * sqrt(dt)
-    intraday = abs.(randn(rng, n)) .* sigma * sqrt(dt)
-    hi = max.(op, cl) .* exp.(intraday .* 0.5)
-    lo = min.(op, cl) .* exp.(-intraday .* 0.5)
+    # GBM sampled at 390 steps a day: open = previous close (no overnight gap),
+    # high and low the extremes of the day's path
+    steps = 390
+    op, hi, lo, cl = zeros(n), zeros(n), zeros(n), zeros(n)
+    p = log(100.0)
+    for t in 1:n
+        path = p .+ cumsum(sigma * sqrt(dt / steps) .* randn(rng, steps))
+        op[t], hi[t], lo[t], cl[t] = exp(p), exp(max(p, maximum(path))), exp(min(p, minimum(path))), exp(path[end])
+        p = path[end]
+    end
 
     daily_sigma = sigma / sqrt(252)
 
     @testset "close_to_close" begin
         vol = close_to_close(cl)
         @test vol > 0
-        @test isapprox(vol, daily_sigma; atol = 0.005)
+        @test isapprox(vol, daily_sigma; rtol = 0.1)
     end
 
     @testset "parkinson" begin
         vol = parkinson(hi, lo)
         @test vol > 0
-        @test isapprox(vol, daily_sigma; atol = 0.005)
+        @test isapprox(vol, daily_sigma; rtol = 0.1)
     end
 
     @testset "garman_klass" begin
         vol = garman_klass(op, hi, lo, cl)
         @test vol > 0
-        @test isapprox(vol, daily_sigma; atol = 0.005)
+        @test isapprox(vol, daily_sigma; rtol = 0.1)
     end
 
     @testset "rogers_satchell" begin
         vol = rogers_satchell(op, hi, lo, cl)
         @test vol > 0
-        @test isapprox(vol, daily_sigma; atol = 0.005)
+        @test isapprox(vol, daily_sigma; rtol = 0.1)
     end
 
     @testset "garman_klass_yang_zhang" begin
         vol = garman_klass_yang_zhang(op, hi, lo, cl)
         @test vol > 0
-        @test isapprox(vol, daily_sigma; atol = 0.005)
+        @test isapprox(vol, daily_sigma; rtol = 0.1)
     end
 
     @testset "yang_zhang" begin
         vol = yang_zhang(op, hi, lo, cl)
         @test vol > 0
-        @test isapprox(vol, daily_sigma; atol = 0.005)
+        @test isapprox(vol, daily_sigma; rtol = 0.1)
     end
 
     @testset "alizadeh_brandt_diebold" begin

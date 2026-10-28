@@ -20,7 +20,7 @@ All scalar estimators accept vectors of daily prices and return **daily volatili
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/antseabra/RangeVol.jl")
+Pkg.add(url="https://github.com/Trumpingtons/RangeVol.jl")
 ```
 
 ## Quick start
@@ -122,9 +122,10 @@ To regenerate the reference data:
 
 ```bash
 Rscript test/generate_data.R       # requires R with TTR and quantmod
-julia --project=test test/generate_results.jl
 julia --project=test test/runtests.jl
 ```
+
+The tests compute RangeVol's estimates from the saved prices; `julia --project=test test/generate_results.jl` writes them to `test/data/rangevol_results.csv` for the table above.
 
 ## Vignette
 

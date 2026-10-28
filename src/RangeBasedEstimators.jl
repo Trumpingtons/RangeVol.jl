@@ -3,12 +3,12 @@
 # ============================================================
 
 """
-    close_to_close(close; trading_periods=252) -> Float64
+    close_to_close(close; trading_periods=1) -> Float64
 
 Classical close-to-close historical volatility estimator.
 
 Computes the sample standard deviation of daily log-returns
-`log(C_t / C_{t-1})` and annualises by `sqrt(trading_periods)`.
+`log(C_t / C_{t-1})` and scales by `sqrt(trading_periods)`.
 This is the textbook baseline against which range-based estimators
 report their relative efficiency gains.
 
@@ -38,7 +38,7 @@ function close_to_close(
 end
 
 """
-    parkinson(high, low; trading_periods=252) -> Float64
+    parkinson(high, low; trading_periods=1) -> Float64
 
 Parkinson (1980) range-based volatility estimator.
 
@@ -69,7 +69,7 @@ function parkinson(
 end
 
 """
-    garman_klass(open, high, low, close; trading_periods=252) -> Float64
+    garman_klass(open, high, low, close; trading_periods=1) -> Float64
 
 Garman-Klass (1980) OHLC volatility estimator.
 
@@ -106,7 +106,7 @@ function garman_klass(
 end
 
 """
-    rogers_satchell(open, high, low, close; trading_periods=252) -> Float64
+    rogers_satchell(open, high, low, close; trading_periods=1) -> Float64
 
 Rogers-Satchell (1991) OHLC volatility estimator.
 
@@ -143,7 +143,7 @@ function rogers_satchell(
 end
 
 """
-    garman_klass_yang_zhang(open, high, low, close; trading_periods=252) -> Float64
+    garman_klass_yang_zhang(open, high, low, close; trading_periods=1) -> Float64
 
 Garman-Klass (1980) estimator extended by Yang and Zhang (2000) to account for
 overnight price gaps.
@@ -184,7 +184,7 @@ function garman_klass_yang_zhang(
 end
 
 """
-    yang_zhang(open, high, low, close; trading_periods=252) -> Float64
+    yang_zhang(open, high, low, close; trading_periods=1) -> Float64
 
 Yang-Zhang (2000) minimum-variance volatility estimator.
 

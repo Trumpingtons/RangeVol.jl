@@ -3,16 +3,16 @@
 ## `close_to_close`
 
 ```julia
-close_to_close(close; trading_periods=252) -> Float64
+close_to_close(close; trading_periods=1) -> Float64
 ```
 
 Classical close-to-close historical volatility estimator (Merton, 1980).
 
-Computes the sample standard deviation of daily log-returns `log(C_t / C_{t-1})` and annualises by `sqrt(trading_periods)`. This is the textbook baseline against which range-based estimators report their relative efficiency gains.
+Computes the sample standard deviation of daily log-returns `log(C_t / C_{t-1})` and scales by `sqrt(trading_periods)`. This is the textbook baseline against which range-based estimators report their relative efficiency gains.
 
 **Arguments**
 - `close` — vector of daily closing prices (length ≥ 2)
-- `trading_periods` — trading periods per year for annualisation (default: 252)
+- `trading_periods` — multiply the variance by this before taking the square root (default: 1 = daily volatility; 252 for annualised equities, 260 for FX, 365 for crypto)
 
 **Minimum observations:** 2
 
@@ -21,7 +21,7 @@ Computes the sample standard deviation of daily log-returns `log(C_t / C_{t-1})`
 ## `parkinson`
 
 ```julia
-parkinson(high, low; trading_periods=252) -> Float64
+parkinson(high, low; trading_periods=1) -> Float64
 ```
 
 Parkinson (1980) range-based volatility estimator.
@@ -30,7 +30,7 @@ Uses only the daily high-low range. Roughly **5.2×** more efficient than close-
 
 **Arguments**
 - `high`, `low` — vectors of daily high and low prices (same length, length ≥ 2)
-- `trading_periods` — trading periods per year for annualisation (default: 252)
+- `trading_periods` — multiply the variance by this before taking the square root (default: 1 = daily volatility; 252 for annualised equities, 260 for FX, 365 for crypto)
 
 **Minimum observations:** 2
 
@@ -39,7 +39,7 @@ Uses only the daily high-low range. Roughly **5.2×** more efficient than close-
 ## `garman_klass`
 
 ```julia
-garman_klass(open, high, low, close; trading_periods=252) -> Float64
+garman_klass(open, high, low, close; trading_periods=1) -> Float64
 ```
 
 Garman-Klass (1980) OHLC volatility estimator.
@@ -48,7 +48,7 @@ Extends Parkinson by incorporating the open-to-close log-return, achieving rough
 
 **Arguments**
 - `open`, `high`, `low`, `close` — vectors of daily prices (same length, length ≥ 2)
-- `trading_periods` — trading periods per year for annualisation (default: 252)
+- `trading_periods` — multiply the variance by this before taking the square root (default: 1 = daily volatility; 252 for annualised equities, 260 for FX, 365 for crypto)
 
 **Minimum observations:** 2
 
@@ -57,7 +57,7 @@ Extends Parkinson by incorporating the open-to-close log-return, achieving rough
 ## `rogers_satchell`
 
 ```julia
-rogers_satchell(open, high, low, close; trading_periods=252) -> Float64
+rogers_satchell(open, high, low, close; trading_periods=1) -> Float64
 ```
 
 Rogers-Satchell (1991) OHLC volatility estimator.
@@ -66,7 +66,7 @@ Drift-independent estimator that remains unbiased when the expected return is no
 
 **Arguments**
 - `open`, `high`, `low`, `close` — vectors of daily prices (same length, length ≥ 2)
-- `trading_periods` — trading periods per year for annualisation (default: 252)
+- `trading_periods` — multiply the variance by this before taking the square root (default: 1 = daily volatility; 252 for annualised equities, 260 for FX, 365 for crypto)
 
 **Minimum observations:** 2
 
@@ -75,7 +75,7 @@ Drift-independent estimator that remains unbiased when the expected return is no
 ## `garman_klass_yang_zhang`
 
 ```julia
-garman_klass_yang_zhang(open, high, low, close; trading_periods=252) -> Float64
+garman_klass_yang_zhang(open, high, low, close; trading_periods=1) -> Float64
 ```
 
 Garman-Klass (1980) estimator extended by Yang and Zhang (2000) to account for overnight price gaps.
@@ -84,7 +84,7 @@ Prepends the squared overnight log-return `log(Open_t / Close_{t-1})^2` to the s
 
 **Arguments**
 - `open`, `high`, `low`, `close` — vectors of daily prices (same length, length ≥ 2)
-- `trading_periods` — trading periods per year for annualisation (default: 252)
+- `trading_periods` — multiply the variance by this before taking the square root (default: 1 = daily volatility; 252 for annualised equities, 260 for FX, 365 for crypto)
 
 **Minimum observations:** 2
 
@@ -93,7 +93,7 @@ Prepends the squared overnight log-return `log(Open_t / Close_{t-1})^2` to the s
 ## `yang_zhang`
 
 ```julia
-yang_zhang(open, high, low, close; trading_periods=252) -> Float64
+yang_zhang(open, high, low, close; trading_periods=1) -> Float64
 ```
 
 Yang-Zhang (2000) minimum-variance volatility estimator.
@@ -108,7 +108,7 @@ where `k = 0.34 / (1.34 + (m+1)/(m-1))` minimises total variance. Independent of
 
 **Arguments**
 - `open`, `high`, `low`, `close` — vectors of daily prices (same length, length ≥ 3)
-- `trading_periods` — trading periods per year for annualisation (default: 252)
+- `trading_periods` — multiply the variance by this before taking the square root (default: 1 = daily volatility; 252 for annualised equities, 260 for FX, 365 for crypto)
 
 **Minimum observations:** 3
 

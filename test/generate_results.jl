@@ -1,8 +1,9 @@
 # generate_results.jl
 #
 # Reads the three OHLC CSV files produced by generate_data.R, computes
-# RangeVol estimates over the full series, and saves rangevo_results.csv
-# for cross-validation against ttr_results.csv.
+# RangeVol estimates over the full series, and saves rangevol_results.csv
+# beside ttr_results.csv, for the README's table. runtests.jl computes the
+# estimates itself and does not read this file.
 #
 # Run after generate_data.R:
 #   julia --project test/generate_results.jl
