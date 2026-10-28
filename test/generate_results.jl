@@ -23,7 +23,7 @@ function read_ohlc(path)
     return open, high, low, close
 end
 
-datasets = ["simulated", "aapl", "eurusd"]
+datasets = ["simulated", "aapl", "sp500"]
 
 rows = NamedTuple{(
     :dataset,

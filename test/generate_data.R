@@ -1,7 +1,8 @@
 # generate_data.R
 #
-# Downloads AAPL (stock) and EURUSD (FX) OHLC data via quantmod, simulates a
-# synthetic OHLC series, and saves all three to test/data/ as CSV files.
+# Downloads AAPL (stock) OHLC data via quantmod and the S&P 500 (index) from
+# PollisDatasets.jl, simulates a synthetic OHLC series, and saves all three to
+# test/data/ as CSV files.
 # Also computes TTR volatility estimates and saves them for cross-validation.
 #
 # Run once before the Julia test suite:
@@ -58,20 +59,16 @@ aapl <- data.frame(
 write.csv(aapl, file.path(data_dir, "aapl.csv"), row.names = FALSE)
 cat("Saved aapl.csv (", nrow(aapl), "rows )\n")
 
-# ── 3. EURUSD FX data ─────────────────────────────────────────────────────────
-getSymbols("EURUSD=X", from = "2023-01-01", to = "2023-12-31", auto.assign = TRUE)
-eurusd_xts <- get("EURUSD=X")
-eurusd <- data.frame(
-  date  = index(eurusd_xts),
-  open  = as.numeric(Op(eurusd_xts)),
-  high  = as.numeric(Hi(eurusd_xts)),
-  low   = as.numeric(Lo(eurusd_xts)),
-  close = as.numeric(Cl(eurusd_xts))
-)
-# Drop any rows with NA (weekends/holidays occasionally appear in FX feeds)
-eurusd <- eurusd[complete.cases(eurusd), ]
-write.csv(eurusd, file.path(data_dir, "eurusd.csv"), row.names = FALSE)
-cat("Saved eurusd.csv (", nrow(eurusd), "rows )\n")
+# ── 3. S&P 500 index data ─────────────────────────────────────────────────────
+# The 250 trading days of 2023 from the sp500 dataset of PollisDatasets.jl
+# (Yahoo! Finance ^GSPC, CC0-1.0). Yahoo's EURUSD=X, used before, has the close
+# equal to the open on almost every day, which leaves the open-to-close terms of
+# the range-based estimators at zero.
+sp500_url <- "https://raw.githubusercontent.com/Trumpingtons/PollisDatasets.jl/main/data/sp500.csv"
+sp500 <- read.csv(sp500_url)
+sp500 <- sp500[startsWith(sp500$date, "2023"), c("date", "open", "high", "low", "close")]
+write.csv(sp500, file.path(data_dir, "sp500.csv"), row.names = FALSE)
+cat("Saved sp500.csv (", nrow(sp500), "rows )\n")
 
 # ── Helper: compute all TTR estimates for one OHLC data frame ─────────────────
 # n = nrow(df) uses the full series, returning a single scalar (last value).
@@ -95,7 +92,7 @@ ttr_estimates <- function(df) {
 results <- rbind(
   data.frame(dataset = "simulated", ttr_estimates(sim_data)),
   data.frame(dataset = "aapl",      ttr_estimates(aapl)),
-  data.frame(dataset = "eurusd",    ttr_estimates(eurusd))
+  data.frame(dataset = "sp500",     ttr_estimates(sp500))
 )
 
 write.csv(results, file.path(data_dir, "ttr_results.csv"), row.names = FALSE)

@@ -81,7 +81,7 @@ parkinson(high, low; trading_periods=365) # annualised, crypto
 
 ## Cross-validation against R / TTR
 
-The test suite cross-validates every estimator against the [TTR](https://cran.r-project.org/package=TTR) package in R using AAPL stock prices (2023), EUR/USD exchange rates (2023), and simulated GBM data (n=500, σ=20%). Results agree to machine precision (~1e-15).
+The test suite cross-validates every estimator against the [TTR](https://cran.r-project.org/package=TTR) package in R using AAPL stock prices (2023), the S&P 500 index (2023, from the `sp500` dataset of PollisDatasets.jl), and simulated GBM data (n=500, σ=20%). Results agree to machine precision (~1e-15).
 
 ### Annualised volatility — RangeVol vs TTR (full-series estimates)
 
@@ -107,16 +107,16 @@ The test suite cross-validates every estimator against the [TTR](https://cran.r-
 | `garman_klass_yang_zhang` | 0.2133 | 0.2133 |
 | `yang_zhang` | 0.2134 | 0.2134 |
 
-#### EUR/USD (2023, n = 260)
+#### S&P 500 (2023, n = 250)
 
 | Estimator | RangeVol | TTR |
 |---|---|---|
-| `close_to_close` | 0.0753 | 0.0753 |
-| `parkinson` | 0.0657 | 0.0657 |
-| `garman_klass` | 0.0774 | 0.0774 |
-| `rogers_satchell` | 0.0925 | 0.0925 |
-| `garman_klass_yang_zhang` | 0.1079 | 0.1079 |
-| `yang_zhang` | 0.1140 | 0.1140 |
+| `close_to_close` | 0.1310 | 0.1310 |
+| `parkinson` | 0.1084 | 0.1084 |
+| `garman_klass` | 0.1058 | 0.1058 |
+| `rogers_satchell` | 0.1039 | 0.1039 |
+| `garman_klass_yang_zhang` | 0.1200 | 0.1200 |
+| `yang_zhang` | 0.1199 | 0.1199 |
 
 To regenerate the reference data:
 

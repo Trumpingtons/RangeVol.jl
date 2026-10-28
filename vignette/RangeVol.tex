@@ -48,8 +48,8 @@
   {the range-based estimators of Parkinson, Garman and Klass, Rogers and Satchell, and Yang and Zhang, with
    close-to-close as the baseline, for daily OHLC prices. R has them in TTR's \fn{volatility()}; Julia had none.}
   {\fn{RangeVol.jl}, from GitHub:\newline \fn{Pkg.add(url = "https://github.com/Trumpingtons/RangeVol.jl")}.}
-  {37 tests: 18 against TTR on three datasets, 14 on simulated prices, 5 of argument checks. Recomputed today, the six
-   estimators agree with TTR 0.24.4 to $5.3\times10^{-14}$ or closer.}
+  {37 tests: 18 against TTR on three datasets (AAPL, the S\&P 500, simulated), 14 on simulated prices, 5 of argument checks. Recomputed today, the six
+   estimators agree with TTR 0.24.4 to $2.0\times10^{-14}$ or closer.}
 
 \nmsection{Why a package}
 The usual estimate of volatility is the standard deviation of daily returns, close to close. It ignores what happened
@@ -98,39 +98,40 @@ l))}. Over 100,000 simulated days of 390 steps, the range had skewness 0.962 and
 and 2.758, with a mean $0.384 + \ln\sigma$ and a standard deviation of 0.299.
 
 \nmsection{A worked example}
-\nmsub{AAPL in 2023}
-The 250 trading days of 2023, from Yahoo Finance through R's quantmod, are in \fn{test/data/aapl.csv}.
+\nmsub{The S\&P 500 in 2023}
+The \fn{sp500} dataset of PollisDatasets.jl has the daily open, high, low and close of the S\&P 500 since 1985 (Yahoo!
+Finance, CC0); 2023 has 250 trading days.
 \begin{nbox}{}
 \ttfamily\small
-using RangeVol, CSV\\
-d = CSV.File("test/data/aapl.csv")\\
-o, h, l, c = d.open, d.high, d.low, d.close\\
-yang\_zhang(o, h, l, c)\hfill \# 0.013443, daily\\
-yang\_zhang(o, h, l, c; trading\_periods = 252)\hfill \# 0.213400, annualised
+using RangeVol, PollisDatasets, Dates\\
+d = dataset("sp500"); i = year.(d.date) .== 2023\\
+o, h, l, c = d.open[i], d.high[i], d.low[i], d.close[i]\\
+yang\_zhang(o, h, l, c)\hfill \# 0.007551, daily\\
+yang\_zhang(o, h, l, c; trading\_periods = 252)\hfill \# 0.119866, annualised
 \end{nbox}
 
 \begin{valuetable}{@{}lcccccc@{}}
 \textbf{Annualised, $k = 252$} & \textbf{close} & \textbf{Parkinson} & \textbf{G--K} & \textbf{R--S} & \textbf{GK--YZ} & \textbf{Y--Z}\\\midrule
+S\&P 500 2023, 250 days & 0.130996 & 0.108409 & 0.105824 & 0.103867 & 0.120032 & 0.119866\\
 AAPL 2023, 250 days & 0.199154 & 0.178093 & 0.178875 & 0.179683 & 0.213309 & 0.213400\\
-EUR/USD 2023, 260 days & 0.075319 & 0.065705 & 0.077361 & 0.092476 & 0.107925 & 0.113978\\
 \end{valuetable}
-For AAPL, the three estimators that see only the day itself give about 0.179; those that add the move overnight,
-0.213, above close-to-close's 0.199. The moves between one close and the next open, as earnings and news released
-outside trading hours would make them, add to the variance, and the first three miss them.
+For the S\&P 500, the three estimators that see only the trading day give 0.104 to 0.108; those that add the move
+overnight, 0.120. For AAPL, from Yahoo! Finance through R's quantmod, the first three give about 0.179 and the last
+two 0.213, above close-to-close's 0.199: a single stock moves more between one close and the next open, as earnings
+and news released outside trading hours would make it, and the first three miss it.
 
 \nmsub{What the data must be}
-The EUR/USD row is a warning. In Yahoo's series the close equals the open on 259 of the 260 days, so
-$\ln(C_t/O_t) = 0$ and the whole day's move between closes appears as a move overnight: Garman and Klass's, Rogers and Satchell's and Yang and Zhang's
-estimators then measure something else, and they disagree with each other and with close-to-close. The estimators
-assume that the open, high, low and close come from one session; check that they do before trusting a range-based
-estimate.
+The estimators assume that the open, high, low and close come from one session. Before 2006, the open of the
+S\&P 500 in Yahoo's data is usually a copy of the previous close, so the move overnight is zero and the open-to-close
+return is the whole day's: use the range-based estimators that need the open only from 2008 on. Some sources of
+currency prices set the close equal to the open; check before trusting a range-based estimate.
 
 \nmsection{What the tests show}
 \nmsub{Against R}
-\fn{test/generate\_data.R} downloads AAPL and EUR/USD, simulates a third series, and saves TTR 0.24.4's
+\fn{test/generate\_data.R} downloads AAPL from Yahoo! Finance and the S\&P 500 of 2023 from PollisDatasets.jl, simulates a third series, and saves TTR 0.24.4's
 \fn{volatility()} of each with \fn{N = 252}, over the whole series (\fn{n = nrow} for the first four, \fn{n = nrow - 1}
 for the two with an overnight term, whose window counts pairs of days). The estimates RangeVol computes today differ
-from TTR's by at most $5.3\times10^{-14}$, relative, in each of the 18; running TTR again in R gives the saved values to
+from TTR's by at most $2.0\times10^{-14}$, relative, in each of the 18; running TTR again in R gives the saved values to
 about 15 digits. The test suite compares two saved CSVs, TTR's and one RangeVol wrote, at a relative tolerance of
 $10^{-4}$, and does not recompute.
 
@@ -181,7 +182,7 @@ are drawn around the open and close, not from a path, and the tolerance of 0.005
 \nmref{parkinson1980}{Parkinson, M. (1980). The extreme value method for estimating the variance of the rate of return. \emph{Journal of Business} 53(1), 61--65. \nmdoi{10.1086/296071}}
 \nmref{rs1991}{Rogers, L.\,C.\,G. and Satchell, S.\,E. (1991). Estimating variance from high, low and closing prices. \emph{Annals of Applied Probability} 1(4), 504--512. \nmdoi{10.1214/aoap/1177005835}}
 \nmref{yz2000}{Yang, D. and Zhang, Q. (2000). Drift-independent volatility estimation based on high, low, open, and close prices. \emph{Journal of Business} 73(3), 477--492. \nmdoi{10.1086/209650}}
-\nmref{software}{Software: Ulrich, J., TTR and quantmod (R); CSV.jl, Tables.jl, StableRNGs.jl and Statistics (MIT).}
+\nmref{software}{Software: Ulrich, J., TTR, and Ryan, J.\,A. and Ulrich, J.\,M., quantmod (R); PollisDatasets.jl; CSV.jl, Tables.jl, StableRNGs.jl and Statistics (MIT).}
 }
 
 \nmcredit
