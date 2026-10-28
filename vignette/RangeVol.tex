@@ -48,7 +48,7 @@
   {the range-based estimators of Parkinson, Garman and Klass, Rogers and Satchell, and Yang and Zhang, with
    close-to-close as the baseline, for daily OHLC prices. R has them in TTR's \fn{volatility()}; Julia had none.}
   {\fn{RangeVol.jl}, from GitHub:\newline \fn{Pkg.add(url = "https://github.com/Trumpingtons/RangeVol.jl")}.}
-  {37 tests: 18 against TTR on three datasets (AAPL, the S\&P 500, simulated), 14 on simulated prices, 5 of argument checks. Recomputed today, the six
+  {38 tests: 18 against TTR on three datasets (AAPL, the S\&P 500, simulated), 15 on simulated prices, 5 of argument checks. Recomputed today, the six
    estimators agree with TTR 0.24.4 to $2.0\times10^{-14}$ or closer.}
 
 \nmsection{Why a package}
@@ -91,11 +91,12 @@ estimators assume no drift and no move overnight; Rogers and Satchell's allows f
 overnight move, and Yang and Zhang's allows for both.
 
 \nmsub{The log range}
-\fn{alizadeh\_brandt\_diebold(h, l)} returns a vector: the range of the log price of each day, $\ln H_t - \ln L_t$.
-Its logarithm, $\ln(\ln H_t - \ln L_t)$, is the log range of \nmcite{abd2002}{Alizadeh, Brandt and Diebold (2002)},
-which is close to Gaussian with a mean that moves with $\ln\sigma_t$: take \fn{log.(alizadeh\_brandt\_diebold(h,
-l))}. Over 100,000 simulated days of 390 steps, the range had skewness 0.962 and kurtosis 4.176; its logarithm 0.139
-and 2.758, with a mean $0.384 + \ln\sigma$ and a standard deviation of 0.299.
+\fn{alizadeh\_brandt\_diebold(h, l)} returns a vector: the log range of each day, $\ln(\ln H_t - \ln L_t)$, the
+logarithm of the range of the log price (\nmcite{abd2002}{Alizadeh, Brandt and Diebold 2002}). It is close to Gaussian,
+with a mean that moves one for one with $\ln\sigma_t$, which makes it an observation of volatility for a state-space
+model; a day whose high equals its low gives $-\infty$, to be dropped. Over 100,000 simulated days of 390 steps, the
+log range had skewness 0.139 and kurtosis 2.758, with a mean of $0.384 + \ln\sigma$ and a standard deviation of 0.299;
+the range itself, \fn{exp.(alizadeh\_brandt\_diebold(h, l))}, had skewness 0.962 and kurtosis 4.176.
 
 \nmsection{A worked example}
 \nmsub{The S\&P 500 in 2023}
@@ -158,7 +159,8 @@ and the range-based estimators then understate the variance by 6 to 9 per cent; 
 a move overnight, the first three miss it, as in AAPL, and only the last two stay close to the truth.
 
 \nmsub{The rest}
-\fn{test/runtests.jl}: 14 tests that each estimator is positive and near the volatility of a simulated series, and 5
+\fn{test/runtests.jl}: 15 tests that each estimator is positive and near the volatility of a simulated series, and the
+log range the logarithm of the range, and 5
 that wrong arguments (vectors of different lengths, too few days) throw. The simulated highs and lows in these tests
 are drawn around the open and close, not from a path, and the tolerance of 0.005 is wide against a daily volatility of
 0.0126; \fn{vignette/simulation.jl} is the stronger check.
@@ -171,8 +173,6 @@ are drawn around the open and close, not from a path, and the tolerance of 0.005
     returns one for the whole series.
   \item \textbf{Bias corrections.} The discrete-sampling bias above has known corrections, and Yang and Zhang's
     $\kappa$ assumes that the drift is small; neither is offered.
-  \item \textbf{The name of the log range.} \fn{alizadeh\_brandt\_diebold} returns the range, whose logarithm is
-    Alizadeh, Brandt and Diebold's log range; the function's name and docstring should say so.
 \end{itemize}
 
 \nmsection{References}

@@ -2,7 +2,7 @@
 
 Classical range-based and close-to-close volatility estimators for Julia.
 
-All scalar estimators accept vectors of daily prices and return **daily volatility as a decimal** by default (e.g. `0.0126` = 1.26% per day). Pass `trading_periods` to annualise. The Alizadeh-Brandt-Diebold function is the exception — it returns a vector of per-period log-ranges, which is a proxy for log-volatility rather than a direct variance estimate.
+All scalar estimators accept vectors of daily prices and return **daily volatility as a decimal** by default (e.g. `0.0126` = 1.26% per day). Pass `trading_periods` to annualise. The Alizadeh-Brandt-Diebold function is the exception — it returns a vector of per-period log ranges, `log(log(H) - log(L))`, a near-Gaussian proxy for log-volatility rather than a direct variance estimate.
 
 ## Estimators
 
@@ -46,9 +46,9 @@ yang_zhang(open, high, low, close)              # 0.03259109267183659
 close_to_close(close; trading_periods=252)      # 0.27864487406575100
 parkinson(high, low; trading_periods=252)       # 0.45187568207479560
 
-# Log-range proxy (returns a vector, not a scalar)
+# Log range log(log(H) - log(L)) (returns a vector, not a scalar)
 alizadeh_brandt_diebold(high, low)
-# [0.04564284, 0.04624533, 0.04693822, 0.04969361, 0.04835673]
+# [-3.08690847, -3.07379483, -3.05892298, -3.00187885, -3.02914983]
 ```
 
 All scalar estimators accept an optional `trading_periods` keyword. The daily variance estimate is multiplied by `trading_periods` before taking the square root:

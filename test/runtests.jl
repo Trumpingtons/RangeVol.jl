@@ -98,7 +98,8 @@ end
     @testset "alizadeh_brandt_diebold" begin
         lr = alizadeh_brandt_diebold(hi, lo)
         @test length(lr) == n
-        @test all(lr .>= 0)
+        @test exp.(lr) ≈ log.(hi ./ lo)
+        @test alizadeh_brandt_diebold([1.0], [1.0]) == [-Inf]
     end
 end
 

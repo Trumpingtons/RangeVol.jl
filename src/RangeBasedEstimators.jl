@@ -244,15 +244,22 @@ end
 """
     alizadeh_brandt_diebold(high, low) -> Vector{Float64}
 
-Alizadeh-Brandt-Diebold (2002) log-range proxy for log-volatility.
+Alizadeh-Brandt-Diebold (2002) log range, a proxy for log-volatility.
 
-Returns the log-range `log(H_t / L_t)` for each period. Under geometric
-Brownian motion this is approximately normally distributed with mean and
-variance that are simple functions of the true log-volatility, making it
-a near-Gaussian signal for latent volatility in state-space models.
+Returns the log range `log(log(H_t) - log(L_t))` for each period: the
+logarithm of the range of the log price. Under a random walk in the log
+price it is close to normally distributed, with a mean that moves one for
+one with the log-volatility `log(sigma_t)` (about `0.43 + log(sigma_t)` for
+continuously observed prices) and a standard deviation of about 0.29,
+making it a near-Gaussian observation of latent volatility in state-space
+models. The range itself, `log(H_t / L_t)`, is right-skewed; take
+`exp.(alizadeh_brandt_diebold(high, low))` for it.
 
-Returns a vector of per-period log-range values, not an annualised scalar,
-since this is a proxy/observable rather than a direct variance estimator.
+A period whose high equals its low has a range of zero and gives `-Inf`;
+drop such periods (`filter(isfinite, lr)`) before fitting a model.
+
+Returns a vector of per-period values, not an annualised scalar, since this
+is a proxy/observable rather than a direct variance estimator.
 
 # Arguments
 - `high`: vector of daily high prices
@@ -271,5 +278,5 @@ function alizadeh_brandt_diebold(
     n == length(low) || throw(ArgumentError("high and low must have the same length"))
     n >= 1 || throw(ArgumentError("at least one observation is required"))
 
-    return [log(high[i] / low[i]) for i in 1:n]
+    return [log(log(high[i]) - log(low[i])) for i in 1:n]
 end
