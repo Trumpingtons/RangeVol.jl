@@ -1,0 +1,188 @@
+% Pollis Domain Packages: Range-based volatility (RangeVol.jl) -- draft 1 (28 October 2026)
+% Compile with: latexmk -pdf RangeVol.tex && latexmk -c
+\input{newmethods_style}
+
+% A package Pollis needs for a panel of its own, not one that reproduces a paper: its own header, key facts and credit
+\renewcommand{\nmdate}{28 October 2026}
+\fancyfoot[L]{\footnotesize\color{soft}\textbf{Pollis}\enspace Domain Packages\enspace·\enspace\nmtheme}
+\renewcommand{\nmhead}[3]{%
+  \renewcommand{\nmtheme}{#1}%
+  \thispagestyle{fancy}%
+  \begin{minipage}[c]{13mm}\pollislogo{11mm}\end{minipage}%
+  \begin{minipage}[c]{\dimexpr\linewidth-13mm\relax}
+    {\color{navy}\Large\bfseries Pollis}\enspace{\color{soft}Domain Packages}\hfill
+    {\color{deepamber}\small\bfseries\MakeUppercase{#1}}
+  \end{minipage}\par\vspace{7mm}
+  {\color{navy}\fontsize{22}{26}\selectfont\bfseries #2}\par\vspace{4pt}
+  {\color{soft}\large #3}\par\vspace{5mm}}
+\renewcommand{\factsheet}[4]{%
+  \begin{tcolorbox}[enhanced, colback=pale, colframe=pale, boxrule=0pt, sharp corners,
+    left=7pt, right=7pt, top=5pt, bottom=5pt, fontupper=\small]
+  \begin{tabularx}{\linewidth}{@{}>{\leavevmode\bfseries\color{navy}}p{27mm}>{\leavevmode}X@{}}
+  In Pollis & #1\\
+  Missing in Julia & #2\\
+  Package & #3\\
+  Tests & #4
+  \end{tabularx}
+  \end{tcolorbox}}
+\renewcommand{\nmcredit}{%
+  \par\vfill
+  \begin{minipage}[b]{0.78\linewidth}\footnotesize\color{soft}
+  Package written and tested with Claude Code (Anthropic) in Pollis.\par
+  \textcopyright\ 2026 Antonio Saragga Seabra\enspace·\enspace Licensed under \href{https://creativecommons.org/licenses/by-sa/4.0/}{CC BY-SA 4.0}\enspace·\enspace Draft, \nmdate
+  \end{minipage}\hfill
+  \begin{minipage}[b]{0.18\linewidth}\raggedleft\pollislogo{9mm}\par\vspace{2pt}{\footnotesize contact@pollis.org}\end{minipage}}
+
+
+\begin{document}
+\emergencystretch=3em
+
+\nmhead{Volatility}
+  {RangeVol: volatility from the day's high and low}
+  {The open, high, low and close of each day say more about volatility than the closes alone: six classical
+   estimators that use them, and the log range of Alizadeh, Brandt and Diebold.}
+
+\factsheet
+  {The \emph{Range-Based Volatility Estimation} panel, set aside for a future Finance Toolbox; its menu entry is
+   commented out until then.}
+  {the range-based estimators of Parkinson, Garman and Klass, Rogers and Satchell, and Yang and Zhang, with
+   close-to-close as the baseline, for daily OHLC prices. R has them in TTR's \fn{volatility()}; Julia had none.}
+  {\fn{RangeVol.jl}, from GitHub:\newline \fn{Pkg.add(url = "https://github.com/Trumpingtons/RangeVol.jl")}.}
+  {37 tests: 18 against TTR on three datasets, 14 on simulated prices, 5 of argument checks. Recomputed today, the six
+   estimators agree with TTR 0.24.4 to $5.3\times10^{-14}$ or closer.}
+
+\nmsection{Why a package}
+The usual estimate of volatility is the standard deviation of daily returns, close to close. It ignores what happened
+during the day: a day that ends where it started may have travelled far in between. \nmcite{parkinson1980}{Parkinson
+(1980)} showed that the high and low of the day, in a random walk, estimate the variance about five times as
+efficiently as the close; \nmcite{gk1980}{Garman and Klass (1980)} added the open and the close;
+\nmcite{rs1991}{Rogers and Satchell (1991)} allowed for a drift; \nmcite{yz2000}{Yang and Zhang (2000)} allowed for
+the move overnight, between one close and the next open. Daily OHLC prices are what most data sources give, so these
+estimators come at no cost in data. Pollis' panel needed them in Julia, with the same conventions as TTR, so that a
+result can be checked in R.
+
+\nmsub{Where they are used}
+\begin{itemize}
+  \item \textbf{Historical volatility} of stocks, indices, currencies and commodities, for risk measures and option
+    pricing, when intraday data are not available.
+  \item \textbf{Short windows.} With five times the efficiency, a month of ranges estimates the variance about as
+    well as five months of closes.
+  \item \textbf{Volatility models.} The log range is a nearly Gaussian measure of volatility for fitting stochastic
+    volatility models (\nmcite{abd2002}{Alizadeh, Brandt and Diebold 2002}).
+\end{itemize}
+
+\nmsection{The method}
+For $n$ days with open $O_t$, high $H_t$, low $L_t$ and close $C_t$, each function returns $\sqrt{\hat\sigma^2 \cdot
+k}$, where $\hat\sigma^2$ is the daily variance and $k$ is \fn{trading\_periods}: 1 by default, for daily
+volatility; 252 to annualise a stock's, as TTR's \fn{N = 252} does.
+\begin{valuetable}{@{}>{\raggedright\arraybackslash}p{52mm}>{\raggedright\arraybackslash}X@{}}
+\textbf{Function} & \textbf{Daily variance}\\\midrule
+\fn{close\_to\_close(c)} & $\frac1{n-2}\sum_{t=2}^n (r_t - \bar r)^2$, with $r_t = \ln(C_t/C_{t-1})$\\
+\fn{parkinson(h, l)} & $\frac{1}{4n\ln 2}\sum_t \ln(H_t/L_t)^2$\\
+\fn{garman\_klass(o, h, l, c)} & $\frac1n\sum_t \bigl[\tfrac12\ln(H_t/L_t)^2 - (2\ln2-1)\ln(C_t/O_t)^2\bigr]$\\
+\fn{rogers\_satchell(o, h, l, c)} & $\frac1n\sum_t \bigl[\ln(H_t/C_t)\ln(H_t/O_t) + \ln(L_t/C_t)\ln(L_t/O_t)\bigr]$\\
+\fn{garman\_klass\_yang\_zhang(o, h, l, c)} & $\frac1{n-1}\sum_{t=2}^n \bigl[\ln(O_t/C_{t-1})^2 + \tfrac12\ln(H_t/L_t)^2 - (2\ln2-1)\ln(C_t/O_t)^2\bigr]$\\
+\fn{yang\_zhang(o, h, l, c)} & $\hat\sigma^2_o + \kappa\,\hat\sigma^2_c + (1-\kappa)\,\hat\sigma^2_{RS}$ over $t = 2, \dots, n$, with $\kappa = 0.34/(1.34 + \frac{m+1}{m-1})$, $m = n-1$; needs $n \ge 3$\\
+\end{valuetable}
+In Yang and Zhang's estimator, $\hat\sigma^2_o$ is the sample variance of the overnight returns $\ln(O_t/C_{t-1})$,
+$\hat\sigma^2_c$ that of the open-to-close returns $\ln(C_t/O_t)$, and $\hat\sigma^2_{RS}$ the Rogers--Satchell
+variance; $\kappa$ is the weight that minimizes the variance of the estimate. Parkinson's and Garman and Klass's
+estimators assume no drift and no move overnight; Rogers and Satchell's allows for a drift; the last two include the
+overnight move, and Yang and Zhang's allows for both.
+
+\nmsub{The log range}
+\fn{alizadeh\_brandt\_diebold(h, l)} returns a vector: the range of the log price of each day, $\ln H_t - \ln L_t$.
+Its logarithm, $\ln(\ln H_t - \ln L_t)$, is the log range of \nmcite{abd2002}{Alizadeh, Brandt and Diebold (2002)},
+which is close to Gaussian with a mean that moves with $\ln\sigma_t$: take \fn{log.(alizadeh\_brandt\_diebold(h,
+l))}. Over 100,000 simulated days of 390 steps, the range had skewness 0.962 and kurtosis 4.176; its logarithm 0.139
+and 2.758, with a mean $0.384 + \ln\sigma$ and a standard deviation of 0.299.
+
+\nmsection{A worked example}
+\nmsub{AAPL in 2023}
+The 250 trading days of 2023, from Yahoo Finance through R's quantmod, are in \fn{test/data/aapl.csv}.
+\begin{nbox}{}
+\ttfamily\small
+using RangeVol, CSV\\
+d = CSV.File("test/data/aapl.csv")\\
+o, h, l, c = d.open, d.high, d.low, d.close\\
+yang\_zhang(o, h, l, c)\hfill \# 0.013443, daily\\
+yang\_zhang(o, h, l, c; trading\_periods = 252)\hfill \# 0.213400, annualised
+\end{nbox}
+
+\begin{valuetable}{@{}lcccccc@{}}
+\textbf{Annualised, $k = 252$} & \textbf{close} & \textbf{Parkinson} & \textbf{G--K} & \textbf{R--S} & \textbf{GK--YZ} & \textbf{Y--Z}\\\midrule
+AAPL 2023, 250 days & 0.199154 & 0.178093 & 0.178875 & 0.179683 & 0.213309 & 0.213400\\
+EUR/USD 2023, 260 days & 0.075319 & 0.065705 & 0.077361 & 0.092476 & 0.107925 & 0.113978\\
+\end{valuetable}
+For AAPL, the three estimators that see only the day itself give about 0.179; those that add the move overnight,
+0.213, above close-to-close's 0.199. The moves between one close and the next open, as earnings and news released
+outside trading hours would make them, add to the variance, and the first three miss them.
+
+\nmsub{What the data must be}
+The EUR/USD row is a warning. In Yahoo's series the close equals the open on 259 of the 260 days, so
+$\ln(C_t/O_t) = 0$ and the whole day's move between closes appears as a move overnight: Garman and Klass's, Rogers and Satchell's and Yang and Zhang's
+estimators then measure something else, and they disagree with each other and with close-to-close. The estimators
+assume that the open, high, low and close come from one session; check that they do before trusting a range-based
+estimate.
+
+\nmsection{What the tests show}
+\nmsub{Against R}
+\fn{test/generate\_data.R} downloads AAPL and EUR/USD, simulates a third series, and saves TTR 0.24.4's
+\fn{volatility()} of each with \fn{N = 252}, over the whole series (\fn{n = nrow} for the first four, \fn{n = nrow - 1}
+for the two with an overnight term, whose window counts pairs of days). The estimates RangeVol computes today differ
+from TTR's by at most $5.3\times10^{-14}$, relative, in each of the 18; running TTR again in R gives the saved values to
+about 15 digits. The test suite compares two saved CSVs, TTR's and one RangeVol wrote, at a relative tolerance of
+$10^{-4}$, and does not recompute.
+
+\nmsub{By simulation}
+\fn{vignette/simulation.jl} draws prices whose log moves as a random walk, with a daily standard deviation of 0.0126,
+in 390 steps a day (one a minute) or 23,400 (one a second), with or without a move overnight; 2,000 samples of 250
+days, or 400 at seconds. The table gives the mean of each daily variance over the true one, and the efficiency: the
+variance of close-to-close's estimate over the estimator's, each divided by its mean.
+\begin{valuetable}{@{}lcccccc@{}}
+ & \textbf{close} & \textbf{Parkinson} & \textbf{G--K} & \textbf{R--S} & \textbf{GK--YZ} & \textbf{Y--Z}\\\midrule
+\multicolumn{7}{@{}l}{\emph{Minutes, no move overnight}}\\
+\quad mean / true & 1.003 & 0.936 & 0.910 & 0.910 & 0.910 & 0.923\\
+\quad efficiency & 1 & 4.65 & 7.21 & 5.64 & 7.18 & 6.78\\
+\multicolumn{7}{@{}l}{\emph{Minutes, a fifth of the variance overnight}}\\
+\quad mean / true & 1.001 & 0.749 & 0.728 & 0.728 & 0.928 & 0.938\\
+\quad efficiency & 1 & 4.50 & 6.96 & 5.45 & 7.61 & 7.24\\
+\multicolumn{7}{@{}l}{\emph{Seconds, no move overnight}}\\
+\quad mean / true & 1.001 & 0.994 & 0.991 & 0.991 & 0.991 & 0.992\\
+\quad efficiency & 1 & 4.68 & 6.98 & 5.98 & 6.95 & 6.81\\
+\end{valuetable}
+The efficiencies are close to those the papers derive for continuous prices, about 5.2 for Parkinson's, 7.4 for
+Garman and Klass's and 6 for Rogers and Satchell's. A high and low observed once a minute fall short of the true ones,
+and the range-based estimators then understate the variance by 6 to 9 per cent; once a second, by less than 1. With
+a move overnight, the first three miss it, as in AAPL, and only the last two stay close to the truth.
+
+\nmsub{The rest}
+\fn{test/runtests.jl}: 14 tests that each estimator is positive and near the volatility of a simulated series, and 5
+that wrong arguments (vectors of different lengths, too few days) throw. The simulated highs and lows in these tests
+are drawn around the open and close, not from a path, and the tolerance of 0.005 is wide against a daily volatility of
+0.0126; \fn{vignette/simulation.jl} is the stronger check.
+
+\nmsection{Still open}
+\begin{itemize}
+  \item \textbf{Recompute in the tests.} The comparison with TTR should compute RangeVol's estimates in the test, from
+    the data, rather than read them from a CSV written earlier.
+  \item \textbf{Rolling windows.} TTR's \fn{volatility()} returns an estimate for each window of $n$ days; RangeVol
+    returns one for the whole series.
+  \item \textbf{Bias corrections.} The discrete-sampling bias above has known corrections, and Yang and Zhang's
+    $\kappa$ assumes that the drift is small; neither is offered.
+  \item \textbf{The name of the log range.} \fn{alizadeh\_brandt\_diebold} returns the range, whose logarithm is
+    Alizadeh, Brandt and Diebold's log range; the function's name and docstring should say so.
+\end{itemize}
+
+\nmsection{References}
+{\footnotesize
+\nmref{abd2002}{Alizadeh, S., Brandt, M.\,W. and Diebold, F.\,X. (2002). Range-based estimation of stochastic volatility models. \emph{Journal of Finance} 57(3), 1047--1091. \nmdoi{10.1111/1540-6261.00454}}
+\nmref{gk1980}{Garman, M.\,B. and Klass, M.\,J. (1980). On the estimation of security price volatilities from historical data. \emph{Journal of Business} 53(1), 67--78. \nmdoi{10.1086/296072}}
+\nmref{parkinson1980}{Parkinson, M. (1980). The extreme value method for estimating the variance of the rate of return. \emph{Journal of Business} 53(1), 61--65. \nmdoi{10.1086/296071}}
+\nmref{rs1991}{Rogers, L.\,C.\,G. and Satchell, S.\,E. (1991). Estimating variance from high, low and closing prices. \emph{Annals of Applied Probability} 1(4), 504--512. \nmdoi{10.1214/aoap/1177005835}}
+\nmref{yz2000}{Yang, D. and Zhang, Q. (2000). Drift-independent volatility estimation based on high, low, open, and close prices. \emph{Journal of Business} 73(3), 477--492. \nmdoi{10.1086/209650}}
+\nmref{software}{Software: Ulrich, J., TTR and quantmod (R); CSV.jl, Tables.jl, StableRNGs.jl and Statistics (MIT).}
+}
+
+\nmcredit
+\end{document}

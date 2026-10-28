@@ -1,0 +1,14 @@
+# The vignette of RangeVol.jl, shown in Help > Documentation > Vignettes once the package is installed.
+
+article = ""
+author = "Antonio Saragga Seabra"
+citation = ""
+description = "Six classical volatility estimators from daily open, high, low and close prices, and the log range of Alizadeh, Brandt and Diebold, checked against R's TTR and by simulation."
+license = "MIT"
+method = "Range-based volatility"
+package = "RangeVol"
+pdf = "RangeVol.pdf"
+repository = "https://github.com/Trumpingtons/RangeVol.jl"
+title = "RangeVol: volatility from the day's high and low"
+topic = "Volatility"
+version = "0.1.0"

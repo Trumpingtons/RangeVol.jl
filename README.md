@@ -126,6 +126,10 @@ julia --project=test test/generate_results.jl
 julia --project=test test/runtests.jl
 ```
 
+## Vignette
+
+[RangeVol: volatility from the day's high and low](vignette/RangeVol.pdf)
+
 ## References
 
 - Merton, R. C. (1980). On estimating the expected return on the market. *Journal of Financial Economics*, 8(4), 323–361.
